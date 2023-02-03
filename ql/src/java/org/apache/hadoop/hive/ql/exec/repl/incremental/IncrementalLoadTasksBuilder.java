@@ -83,7 +83,7 @@ public class IncrementalLoadTasksBuilder {
 
   public IncrementalLoadTasksBuilder(String dbName, String loadPath, IncrementalLoadEventsIterator iterator,
       HiveConf conf, Long eventTo, ReplicationMetricCollector metricCollector, ReplStatsTracker replStatsTracker,
-                                     boolean shouldFailover) throws SemanticException {
+                                     boolean shouldFailover, int bootstrapTableSize) throws SemanticException {
     this.dbName = dbName;
     dumpDirectory = (new Path(loadPath).getParent()).toString();
     this.iterator = iterator;
@@ -117,6 +117,11 @@ public class IncrementalLoadTasksBuilder {
           new FailoverMetaData(new Path(dumpDirectory, ReplUtils.REPL_HIVE_BASE_DIR), conf),
           dbFailoverEndPoint, ReplConst.FailoverType.PLANNED.toString());
     } else {
+      //Registering table metric as we do boostrap of selective tables
+      // in second load cycle of optimized bootstrap
+      if(bootstrapTableSize > 0) {
+        metricMap.put(ReplUtils.MetricName.TABLES.name(), (long) bootstrapTableSize);
+      }
       this.metricCollector.reportStageStart("REPL_LOAD", metricMap);
     }
   }
